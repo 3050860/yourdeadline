@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нетариум-Лучи - Обратный отсчет</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 50px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        .countdown {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .time-unit {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            min-width: 100px;
+        }
+        .time-value {
+            font-size: 1.2em;
+            display: block;
+        }
+        .time-label {
+            font-size: 0.6em;
+            opacity: 0.8;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Нетариум-Лучи</h1>
+        <div class="subtitle">рабочего времени до релиза осталось:</div>
+        <div class="countdown">
+            <div class="time-unit">
+                <span class="time-value" id="days">0</span>
+                <span class="time-label">дней</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="hours">0</span>
+                <span class="time-label">часов</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="minutes">0</span>
+                <span class="time-label">минут</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="seconds">0</span>
+                <span class="time-label">секунд</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getMoscowTime() {
+            const now = new Date();
+            const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+            const moscow = new Date(utc + 3 * 3600000);
+            return moscow;
+        }
+
+        function isWorkingDay(date) {
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+            
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            if (year === 2026 && month === 11 && day === 4) return false;
+            if (year === 2026 && month === 12 && day === 31) return false;
+            
+            return true;
+        }
+
+        function calculateRemainingTime() {
+            const now = getMoscowTime();
+            const endDate = new Date(2026, 11, 31, 18, 0, 0);
+            
+            if (now >= endDate) {
+                return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+            }
+            
+            let workingDaysCount = 0;
+            let tempDate = new Date(now);
+            tempDate.setDate(tempDate.getDate() + 1);
+            tempDate.setHours(0, 0, 0, 0);
+            
+            while (tempDate <= endDate) {
+                if (isWorkingDay(tempDate)) {
+                    workingDaysCount++;
+                }
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+            
+            let secondsInCurrentDay = 0;
+            
+            if (isWorkingDay(now)) {
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+                const totalMinutes = hours * 60 + minutes;
+                
+                if (totalMinutes >= 540 && totalMinutes < 780) {
+                    const endOfMorning = new Date(now);
+                    endOfMorning.setHours(13, 0, 0, 0);
+                    secondsInCurrentDay = Math.floor((endOfMorning - now) / 1000);
+                    secondsInCurrentDay += 4 * 3600;
+                } else if (totalMinutes >= 840 && totalMinutes < 1080) {
+                    const endOfDay = new Date(now);
+                    endOfDay.setHours(18, 0, 0, 0);
+                    secondsInCurrentDay = Math.floor((endOfDay - now) / 1000);
+                } else if (totalMinutes < 540) {
+                    secondsInCurrentDay = 8 * 3600;
+                } else if (totalMinutes >= 780 && totalMinutes < 840) {
+                    secondsInCurrentDay = 4 * 3600;
+                } else {
+                    secondsInCurrentDay = 0;
+                }
+            }
+            
+            let totalSeconds = workingDaysCount * 8 * 3600 + secondsInCurrentDay;
+            
+            const days = Math.floor(totalSeconds / (8 * 3600));
+            totalSeconds %= 8 * 3600;
+            const hours = Math.floor(totalSeconds / 3600);
+            totalSeconds %= 3600;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            return { days, hours, minutes, seconds };
+        }
+
+        function updateCountdown() {
+            const time = calculateRemainingTime();
+            document.getElementById('days').textContent = time.days;
+            document.getElementById('hours').textContent = time.hours;
+            document.getElementById('minutes').textContent = time.minutes;
+            document.getElementById('seconds').textContent = time.seconds;
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
